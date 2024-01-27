@@ -1,19 +1,13 @@
 import { StatusCodes } from 'http-status-codes';
-import mongoose from 'mongoose';
 import User from '../models/User.js';
 
-const ERROR_CODE_DUPLICATE_MONGO = 11000;
-
 const handleError = (res, error) => {
-  if (error instanceof mongoose.Error.CastError) {
-    res.status(StatusCodes.BAD_REQUEST).send({ message: 'Переданы неверные данные', ...error });
-  } else if (error instanceof mongoose.Error.DocumentNotFoundError
-    || error instanceof mongoose.Error.ValidationError) {
-    res.status(StatusCodes.NOT_FOUND).send({ message: 'Пользователь не найден' });
-  } else if (error.code === ERROR_CODE_DUPLICATE_MONGO) {
-    res.status(StatusCodes.CONFLICT).send({ message: 'Пользователь уже существует' });
+  if (error.name === 'CastError') {
+    res.status(StatusCodes.BAD_REQUEST).send({ message: 'Переданы неверные данные для поиска пользователя.' });
+  } else if (error.name === 'DocumentNotFoundError') {
+    res.status(StatusCodes.NOT_FOUND).send({ message: 'Пользователь с указанным id не найден.' });
   } else {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Ошибка на стороне сервера', error: error.message });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка на сервере.' });
   }
 };
 
@@ -34,8 +28,8 @@ export const getUsers = async (req, res) => {
 export const getUserById = async (req, res) => {
   try {
     const { userId } = req.params;
-    const user = await User.findById(userId).orFail();
-    res.status(StatusCodes.OK).send(user);
+    const user = await User.findById(userId).orFail(new Error('DocumentNotFoundError'));
+    res.send(user);
   } catch (error) {
     handleError(res, error);
   }
