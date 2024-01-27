@@ -20,15 +20,6 @@ export const createCard = async (req, res) => {
   }
 };
 
-export const deleteCard = async (req, res) => {
-  try {
-    const card = await Card.findByIdAndDelete(req.params.cardId).orFail();
-    res.send(card);
-  } catch (error) {
-    res.status(StatusCodes.NOT_FOUND).send({ message: 'Карточка не найдена', ...error });
-  }
-};
-
 export const likeCard = async (req, res) => {
   try {
     const card = await Card.findByIdAndUpdate(
@@ -49,6 +40,15 @@ export const dislikeCard = async (req, res) => {
       { $addToSet: { likes: req.user._id } },
       { new: true },
     ).orFail();
+    res.send(card);
+  } catch (error) {
+    res.status(StatusCodes.NOT_FOUND).send({ message: 'Карточка не найдена', ...error });
+  }
+};
+
+export const deleteCard = async (req, res) => {
+  try {
+    const card = await Card.findByIdAndDelete(req.params.cardId).orFail();
     res.send(card);
   } catch (error) {
     res.status(StatusCodes.NOT_FOUND).send({ message: 'Карточка не найдена', ...error });
