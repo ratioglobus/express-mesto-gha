@@ -30,6 +30,8 @@ export const likeCard = async (req, res) => {
     res.send(card);
   } catch (error) {
     res.status(StatusCodes.NOT_FOUND).send({ message: 'Карточка не найдена', ...error });
+    res.status(StatusCodes.BAD_REQUEST).send({ message: 'Переданы неверные данные', ...error });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Ошибка на стороне сервера', error: error.message });
   }
 };
 
@@ -43,6 +45,8 @@ export const dislikeCard = async (req, res) => {
     res.send(card);
   } catch (error) {
     res.status(StatusCodes.NOT_FOUND).send({ message: 'Карточка не найдена', ...error });
+    res.status(StatusCodes.BAD_REQUEST).send({ message: 'Переданы неверные данные', ...error });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Ошибка на стороне сервера', error: error.message });
   }
 };
 
@@ -52,5 +56,7 @@ export const deleteCard = async (req, res) => {
     res.send(card);
   } catch (error) {
     res.status(StatusCodes.NOT_FOUND).send({ message: 'Карточка не найдена', ...error });
+    res.status(StatusCodes.BAD_REQUEST).send({ message: 'Переданы неверные данные', ...error });
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Ошибка на стороне сервера', error: error.message });
   }
 };
