@@ -28,7 +28,7 @@ export const getUserById = async (req, res) => {
     }
 
     return res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Ошибка на стороне сервера', error: error.message });
+      .status(StatusCodes.INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка', error: error.message });
   }
 };
 
@@ -45,7 +45,7 @@ export const createUser = async (req, res) => {
     }
 
     return res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Ошибка на стороне сервера', error: error.message });
+      .status(StatusCodes.INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка', error: error.message });
   }
 };
 
