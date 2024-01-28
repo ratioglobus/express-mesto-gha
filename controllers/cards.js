@@ -26,12 +26,16 @@ export const likeCard = async (req, res) => {
       req.params.cardId,
       { $addToSet: { likes: req.user._id } },
       { new: true },
-    ).orFail();
+    ).orFail(new Error('CardNotFound'));
     res.send(card);
   } catch (error) {
-    res.status(StatusCodes.NOT_FOUND).send({ message: 'Карточка не найдена', ...error });
-    res.status(StatusCodes.BAD_REQUEST).send({ message: 'Переданы неверные данные', ...error });
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Ошибка на стороне сервера', error: error.message });
+    if (error.message === 'CardNotFound') {
+      res.status(StatusCodes.NOT_FOUND).send({ message: 'Карточка не найдена' });
+    } else if (error.name === 'CastError') {
+      res.status(StatusCodes.BAD_REQUEST).send({ message: 'Переданы неверные данные' });
+    } else {
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Ошибка на стороне сервера', error: error.message });
+    }
   }
 };
 
@@ -39,24 +43,32 @@ export const dislikeCard = async (req, res) => {
   try {
     const card = await Card.findByIdAndUpdate(
       req.params.cardId,
-      { $addToSet: { likes: req.user._id } },
+      { $pull: { likes: req.user._id } },
       { new: true },
-    ).orFail();
+    ).orFail(new Error('CardNotFound'));
     res.send(card);
   } catch (error) {
-    res.status(StatusCodes.NOT_FOUND).send({ message: 'Карточка не найдена', ...error });
-    res.status(StatusCodes.BAD_REQUEST).send({ message: 'Переданы неверные данные', ...error });
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Ошибка на стороне сервера', error: error.message });
+    if (error.message === 'CardNotFound') {
+      res.status(StatusCodes.NOT_FOUND).send({ message: 'Карточка не найдена' });
+    } else if (error.name === 'CastError') {
+      res.status(StatusCodes.BAD_REQUEST).send({ message: 'Переданы неверные данные' });
+    } else {
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Ошибка на стороне сервера', error: error.message });
+    }
   }
 };
 
 export const deleteCard = async (req, res) => {
   try {
-    const card = await Card.findByIdAndDelete(req.params.cardId).orFail();
+    const card = await Card.findByIdAndDelete(req.params.cardId).orFail(new Error('CardNotFound'));
     res.send(card);
   } catch (error) {
-    res.status(StatusCodes.NOT_FOUND).send({ message: 'Карточка не найдена', ...error });
-    res.status(StatusCodes.BAD_REQUEST).send({ message: 'Переданы неверные данные', ...error });
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Ошибка на стороне сервера', error: error.message });
+    if (error.message === 'CardNotFound') {
+      res.status(StatusCodes.NOT_FOUND).send({ message: 'Карточка не найдена' });
+    } else if (error.name === 'CastError') {
+      res.status(StatusCodes.BAD_REQUEST).send({ message: 'Переданы неверные данные' });
+    } else {
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ message: 'Ошибка на стороне сервера', error: error.message });
+    }
   }
 };
