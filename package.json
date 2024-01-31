@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "project practicum",
   "main": "index.js",
-  "type": "module",
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon --experimental-modules --es-module-specifier-resolution=node app.js",
@@ -14,6 +13,7 @@
     "url": "git+https://github.com/ratioglobus/express-mesto-gha.git"
   },
   "author": "Ivan",
+  "type": "module",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/ratioglobus/express-mesto-gha/issues"
