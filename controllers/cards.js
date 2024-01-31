@@ -1,5 +1,5 @@
 import { StatusCodes } from 'http-status-codes';
-import Card from '../models/Card.js';
+import Card from '../models/сard.js';
 
 export const getCards = async (req, res) => {
   try {
@@ -60,15 +60,19 @@ export const dislikeCard = async (req, res) => {
 
 export const deleteCard = async (req, res) => {
   try {
-    const card = await Card.findByIdAndDelete(req.params.cardId).orFail(new Error('CardNotFound'));
-    res.send(card);
+    const card = await Card.findById(req.params.cardId).orFail();
+    if (!card.owner.equals(req.user._id)) {
+      throw new Error('Вы не можете удалить карточку другого пользователя');
+    }
+    await Card.deleteOne(card);
+    return res.send({ message: 'Карточка удалена' });
   } catch (error) {
     if (error.message === 'CardNotFound') {
-      res.status(StatusCodes.NOT_FOUND).send({ message: 'Карточка не найдена' });
-    } else if (error.name === 'CastError') {
-      res.status(StatusCodes.BAD_REQUEST).send({ message: 'Переданы неверные данные' });
-    } else {
-      res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка', error: error.message });
+      return res.status(StatusCodes.NOT_FOUND).send({ message: 'Карточка не найдена' });
     }
+    if (error.name === 'CastError') {
+      return res.status(StatusCodes.BAD_REQUEST).send({ message: 'Переданы неверные данные' });
+    }
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка', error: error.message });
   }
 };

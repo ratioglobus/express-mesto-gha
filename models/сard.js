@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import regexURL from '../utils/const.js';
 
 const cardScheme = new mongoose.Schema({
   name: {
@@ -10,6 +11,7 @@ const cardScheme = new mongoose.Schema({
   link: {
     type: String,
     required: true,
+    match: [regexURL, 'URL некорректен'],
   },
   owner: {
     type: mongoose.Schema.Types.ObjectId,

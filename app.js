@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { json } from 'express';
 import mongoose from 'mongoose';
 import bodyParser from 'body-parser';
 import router from './routes/index.js';
@@ -11,12 +11,7 @@ const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-app.use((req, res, next) => {
-  req.user = {
-    _id: '65b5611b8148418571e56a8f',
-  };
-  next();
-});
+app.use(json());
 
 async function startApp() {
   try {
