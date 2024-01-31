@@ -2,7 +2,7 @@ import { StatusCodes } from 'http-status-codes';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-import User from '../models/user.js';
+import User from '../models/user';
 
 const { NODE_ENV, JWT_SECRET } = process.env;
 
