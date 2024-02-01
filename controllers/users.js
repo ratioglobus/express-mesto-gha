@@ -106,13 +106,12 @@ export const updateAvatarProfile = async (req, res, next) => {
     ).orFail();
     return res.json(updatedInfo);
   } catch (error) {
-    if (error instanceof mongoose.Error.DocumentNotFoundError) {
-      return next(GeneralErrors.NotFound('Такого пользователя не существует'));
-    }
     if (error instanceof mongoose.Error.ValidationError) {
       return next(GeneralErrors.BadRequest('Переданы неверные данные'));
     }
-
+    if (error instanceof mongoose.Error.DocumentNotFoundError) {
+      return next(GeneralErrors.NotFound('Такого пользователя не существует'));
+    }
     return next(GeneralErrors());
   }
 };
@@ -123,18 +122,15 @@ export const updateInfoProfile = async (req, res, next) => {
     const updatedInfo = await User.findByIdAndUpdate(
       req.user._id,
       { name, about },
-      {
-        new: true,
-        runValidators: true,
-      },
+      { new: true, runValidators: true },
     ).orFail();
     return res.json(updatedInfo);
   } catch (error) {
-    if (error instanceof mongoose.Error.DocumentNotFoundError) {
-      return next(GeneralErrors.NotFound('Такого пользователя не существует'));
-    }
     if (error instanceof mongoose.Error.ValidationError) {
       return next(GeneralErrors.BadRequest('Переданы неверные данные'));
+    }
+    if (error instanceof mongoose.Error.DocumentNotFoundError) {
+      return next(GeneralErrors.NotFound('Такого пользователя не существует'));
     }
 
     return next(GeneralErrors());
