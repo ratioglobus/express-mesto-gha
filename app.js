@@ -1,33 +1,21 @@
 import express, { json } from 'express';
 import 'dotenv/config';
-import mongoose from 'mongoose';
 import helmet from 'helmet';
-import { rateLimit } from 'express-rate-limit';
+import mongoose from 'mongoose';
 import router from './routes/index.js';
 
-const { PORT = 3000, DB_URL = 'mongodb://localhost:27017/mestodb' } = process.env;
-const app = express();
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 100,
-  standardHeaders: 'draft-7',
-  legacyHeaders: false,
-});
+const { PORT = 3000 } = process.env;
+const BASE_URL_DB = 'mongodb://localhost:27017/mestodb';
 
+const app = express();
 app.use(helmet());
-app.use(limiter);
 app.use(json());
 
 async function startApp() {
   try {
-    await mongoose
-      .connect(DB_URL)
-      .then(() => {
-        console.log('Connected to database');
-      })
-      .catch((error) => {
-        console.log('Error', error);
-      });
+    await mongoose.connect(BASE_URL_DB);
+    console.log('Connection database - OK');
+
     app.use(router);
     app.listen(PORT, () => {
       console.log('Server is working on port', PORT);

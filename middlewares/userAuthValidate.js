@@ -1,12 +1,12 @@
 import { Joi, celebrate } from 'celebrate';
-import { URLExpression } from '../utils/const.js';
+import URLExp from '../utils/const.js';
 
 export default celebrate({
   body: Joi.object().keys({
     name: Joi.string().min(2).max(30),
     about: Joi.string().min(2).max(30),
-    avatar: Joi.string().pattern(new RegExp(URLExpression)),
     email: Joi.string().required().email(),
     password: Joi.string().required().min(8),
+    avatar: Joi.string().pattern(new RegExp(URLExp)),
   }),
 });

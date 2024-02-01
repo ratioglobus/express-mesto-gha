@@ -3,8 +3,7 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import User from '../models/user.js';
 import generateToken from '../utils/jwt.js';
-import { ERROR_CODE_DUPLICATE_MONGO, SALT_ROUNDS } from '../utils/const.js';
-import ApiError from '../utils/ApiError.js';
+import GeneralErrors from '../utils/GeneralErrors.js';
 
 export const login = async (req, res, next) => {
   const { email, password } = req.body;
@@ -22,17 +21,59 @@ export const login = async (req, res, next) => {
     return res.send({ token });
   } catch (error) {
     if (error.message === 'NotAutanticate') {
-      return next(ApiError.Unauthorized('Неправильные почта или пароль'));
+      return next(GeneralErrors.Unauthorized('Неправильные почта или пароль'));
     }
 
-    return next(ApiError());
+    return next(GeneralErrors());
+  }
+};
+
+export const getUsers = async (req, res, next) => {
+  try {
+    const users = await User.find({});
+    return res.send(users);
+  } catch (error) {
+    return next(GeneralErrors());
+  }
+};
+
+export const getCurrentUser = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id).orFail();
+    return res.status(StatusCodes.OK).send(user);
+  } catch (error) {
+    if (error instanceof mongoose.Error.CastError) {
+      return next(GeneralErrors.BadRequest('Переданы неверные данные'));
+    }
+    if (error instanceof mongoose.Error.DocumentNotFoundError) {
+      return next(GeneralErrors.NotFound('Такого пользователя не существует'));
+    }
+
+    return next(GeneralErrors());
+  }
+};
+
+export const getUserById = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId).orFail();
+    return res.status(StatusCodes.OK).send(user);
+  } catch (error) {
+    if (error instanceof mongoose.Error.CastError) {
+      return next(GeneralErrors.BadRequest('Переданы неверные данные'));
+    }
+    if (error instanceof mongoose.Error.DocumentNotFoundError) {
+      return next(GeneralErrors.NotFound('Такого пользователя не существует'));
+    }
+
+    return next(GeneralErrors());
   }
 };
 
 export const createUser = async (req, res, next) => {
   try {
     const newUser = await bcrypt
-      .hash(req.body.password, SALT_ROUNDS)
+      .hash(req.body.password, 10)
       .then((hash) => User.create({ ...req.body, password: hash }));
 
     return res.status(StatusCodes.CREATED).send({
@@ -44,56 +85,35 @@ export const createUser = async (req, res, next) => {
     });
   } catch (error) {
     if (error instanceof mongoose.Error.ValidationError) {
-      return next(ApiError.BadRequest('Переданы неверные данные'));
+      return next(GeneralErrors.BadRequest('При создании пользователя переданы неверные данные'));
     }
 
-    if (error.code === ERROR_CODE_DUPLICATE_MONGO) {
-      return next(ApiError.Conflict('Пользователь уже существует'));
+    if (error.code === 11000) {
+      return next(GeneralErrors.Conflict('Пользователь уже существует'));
     }
 
-    return next(ApiError());
+    return next(GeneralErrors());
   }
 };
 
-export const getUsers = async (req, res, next) => {
+export const updateAvatarProfile = async (req, res, next) => {
   try {
-    const users = await User.find({});
-    return res.send(users);
+    const { avatar } = req.body;
+    const updatedInfo = await User.findByIdAndUpdate(
+      req.user._id,
+      { avatar },
+      { new: true, runValidators: true },
+    ).orFail();
+    return res.json(updatedInfo);
   } catch (error) {
-    return next(ApiError());
-  }
-};
-
-export const getCurrentUser = async (req, res, next) => {
-  try {
-    const user = await User.findById(req.user._id).orFail();
-    return res.status(StatusCodes.OK).send(user);
-  } catch (error) {
-    if (error instanceof mongoose.Error.CastError) {
-      return next(ApiError.BadRequest('Переданы неверные данные'));
-    }
     if (error instanceof mongoose.Error.DocumentNotFoundError) {
-      return next(ApiError.NotFound('Пользователь не найден'));
+      return next(GeneralErrors.NotFound('Такого пользователя не существует'));
+    }
+    if (error instanceof mongoose.Error.ValidationError) {
+      return next(GeneralErrors.BadRequest('Переданы неверные данные'));
     }
 
-    return next(ApiError());
-  }
-};
-
-export const getUserById = async (req, res, next) => {
-  try {
-    const { userId } = req.params;
-    const user = await User.findById(userId).orFail();
-    return res.status(StatusCodes.OK).send(user);
-  } catch (error) {
-    if (error instanceof mongoose.Error.CastError) {
-      return next(ApiError.BadRequest('Переданы неверные данные'));
-    }
-    if (error instanceof mongoose.Error.DocumentNotFoundError) {
-      return next(ApiError.NotFound('Пользователь не найден'));
-    }
-
-    return next(ApiError());
+    return next(GeneralErrors());
   }
 };
 
@@ -111,36 +131,12 @@ export const updateInfoProfile = async (req, res, next) => {
     return res.json(updatedInfo);
   } catch (error) {
     if (error instanceof mongoose.Error.DocumentNotFoundError) {
-      return next(ApiError.NotFound('Пользователь не найден'));
+      return next(GeneralErrors.NotFound('Такого пользователя не существует'));
     }
     if (error instanceof mongoose.Error.ValidationError) {
-      return next(ApiError.BadRequest('Переданы неверные данные'));
+      return next(GeneralErrors.BadRequest('Переданы неверные данные'));
     }
 
-    return next(ApiError());
-  }
-};
-
-export const updateAvatarProfile = async (req, res, next) => {
-  try {
-    const { avatar } = req.body;
-    const updatedInfo = await User.findByIdAndUpdate(
-      req.user._id,
-      { avatar },
-      {
-        new: true,
-        runValidators: true,
-      },
-    ).orFail();
-    return res.json(updatedInfo);
-  } catch (error) {
-    if (error instanceof mongoose.Error.DocumentNotFoundError) {
-      return next(ApiError.NotFound('Пользователь не найден'));
-    }
-    if (error instanceof mongoose.Error.ValidationError) {
-      return next(ApiError.BadRequest('Переданы неверные данные'));
-    }
-
-    return next(ApiError());
+    return next(GeneralErrors());
   }
 };

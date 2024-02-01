@@ -1,14 +1,14 @@
 import { StatusCodes } from 'http-status-codes';
 import mongoose from 'mongoose';
 import Card from '../models/card.js';
-import ApiError from '../utils/ApiError.js';
+import GeneralErrors from '../utils/GeneralErrors.js';
 
 export const getCards = async (req, res, next) => {
   try {
     const cards = await Card.find({});
     return res.send(cards);
   } catch (error) {
-    return next(ApiError());
+    return next(GeneralErrors());
   }
 };
 
@@ -19,31 +19,9 @@ export const createCard = async (req, res, next) => {
     return res.status(StatusCodes.CREATED).send(await newCard.save());
   } catch (error) {
     if (error instanceof mongoose.Error.ValidationError) {
-      return next(ApiError.BadRequest('Переданы неверные данные'));
+      return next(GeneralErrors.BadRequest('При создании карточки переданы некорректные данные'));
     }
-    return next(ApiError());
-  }
-};
-
-export const deleteCard = async (req, res, next) => {
-  try {
-    const card = await Card.findById(req.params.cardId).orFail();
-    if (card.owner.toString() !== req.user._id) {
-      return next(ApiError.Forbidden('Автор карточки - другой пользователь'));
-    }
-    return Card.deleteOne(card)
-      .orFail()
-      .then(() => {
-        res.send({ message: 'Карточка удалена' });
-      });
-  } catch (error) {
-    if (error instanceof mongoose.Error.CastError) {
-      return next(ApiError.BadRequest('Переданы неверные данные'));
-    }
-    if (error instanceof mongoose.Error.DocumentNotFoundError) {
-      return next(ApiError.NotFound('Карточка не найдена'));
-    }
-    return next(ApiError());
+    return next(GeneralErrors());
   }
 };
 
@@ -57,12 +35,12 @@ export const likeCard = async (req, res, next) => {
     return res.send(card);
   } catch (error) {
     if (error instanceof mongoose.Error.CastError) {
-      return next(ApiError.BadRequest('Переданы неверные данные'));
+      return next(GeneralErrors.BadRequest('При создании карточки переданы некорректные данные'));
     }
     if (error instanceof mongoose.Error.DocumentNotFoundError) {
-      return next(ApiError.NotFound('Карточка не найдена'));
+      return next(GeneralErrors.NotFound('Такая карточка не найдена'));
     }
-    return next(ApiError());
+    return next(GeneralErrors());
   }
 };
 
@@ -76,11 +54,33 @@ export const dislikeCard = async (req, res, next) => {
     return res.send(card);
   } catch (error) {
     if (error instanceof mongoose.Error.CastError) {
-      return next(ApiError.BadRequest('Переданы неверные данные'));
+      return next(GeneralErrors.BadRequest('При создании карточки переданы некорректные данные'));
     }
     if (error instanceof mongoose.Error.DocumentNotFoundError) {
-      return next(ApiError.NotFound('Карточка не найдена'));
+      return next(GeneralErrors.NotFound('Такая карточка не найдена'));
     }
-    return next(ApiError());
+    return next(GeneralErrors());
+  }
+};
+
+export const deleteCard = async (req, res, next) => {
+  try {
+    const card = await Card.findById(req.params.cardId).orFail();
+    if (card.owner.toString() !== req.user._id) {
+      return next(GeneralErrors.Forbidden('Вы не можете удалять карточки других пользователей'));
+    }
+    return Card.deleteOne(card)
+      .orFail()
+      .then(() => {
+        res.send({ message: 'Карточка удалена' });
+      });
+  } catch (error) {
+    if (error instanceof mongoose.Error.CastError) {
+      return next(GeneralErrors.BadRequest('При создании карточки переданы некорректные данные'));
+    }
+    if (error instanceof mongoose.Error.DocumentNotFoundError) {
+      return next(GeneralErrors.NotFound('Такая карточка не найдена'));
+    }
+    return next(GeneralErrors());
   }
 };

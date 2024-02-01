@@ -1,30 +1,12 @@
 import mongoose from 'mongoose';
 import validator from 'validator';
-import { URLExpression } from '../utils/const.js';
+import URLExp from '../utils/const.js';
 
 const userScheme = new mongoose.Schema(
   {
-    name: {
-      type: String,
-      minlength: 2,
-      maxlength: 30,
-      default: 'Жак-Ив Кусто',
-    },
-    about: {
-      type: String,
-      minlength: 2,
-      maxlength: 30,
-      default: 'Исследователь',
-    },
-    avatar: {
-      type: String,
-      default:
-        'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
-      match: [URLExpression, 'Некорректный URL'],
-    },
     email: {
       type: String,
-      required: true,
+      required: [true, 'Поле является обязательным'],
       unique: true,
       validator: {
         validator: (v) => validator.isEmail(v),
@@ -33,8 +15,26 @@ const userScheme = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
+      required: [true, 'Поле является обязательным'],
       select: false,
+    },
+    name: {
+      type: String,
+      minlength: [2, 'Минимальная длина 2 символа'],
+      maxlength: [30, 'Максимальная длина строки 30 символов'],
+      default: 'Жак-Ив Кусто',
+    },
+    about: {
+      type: String,
+      minlength: [2, 'Минимальная длина пароля 2 символа'],
+      maxlength: [30, 'Максимальная длина строки 30 символов'],
+      default: 'Исследователь',
+    },
+    avatar: {
+      type: String,
+      default:
+        'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
+      match: [URLExp, 'URL некорректен'],
     },
   },
   { versionKey: false },

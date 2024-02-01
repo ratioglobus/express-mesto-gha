@@ -1,23 +1,23 @@
 import mongoose from 'mongoose';
-import { URLExpression } from '../utils/const.js';
+import URLExp from '../utils/const.js';
 
 const cardScheme = new mongoose.Schema(
   {
     name: {
       type: String,
-      minlength: 2,
-      maxlength: 30,
-      required: true,
+      required: [true, 'Поле является обязательным'],
+      minlength: [2, 'Минимальная длина строки 2 символа'],
+      maxlength: [30, 'Минимальная длина строки 30 символов'],
     },
     link: {
       type: String,
-      required: true,
-      match: [URLExpression, 'Некорректный URL'],
+      required: [true, 'Поле является обязательным'],
+      match: [URLExp, 'URL некорректен'],
     },
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'user',
-      required: true,
+      required: [true, 'Поле является обязательным'],
     },
     likes: {
       type: [
