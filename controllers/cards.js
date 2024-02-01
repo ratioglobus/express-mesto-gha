@@ -1,93 +1,86 @@
-import mongoose from 'mongoose';
 import { StatusCodes } from 'http-status-codes';
+import mongoose from 'mongoose';
 import Card from '../models/card.js';
-import asyncErrorHandler from '../utils/asyncErrorHandler.js';
-import CustomError from '../utils/customError.js';
+import ApiError from '../utils/ApiError.js';
 
-// Get all cards controller
-// eslint-disable-next-line no-unused-vars
-const getCards = asyncErrorHandler((req, res, next) => Card.find({})
-  .populate(['owner', 'likes'])
-  .then((cards) => {
-    res.send(cards);
-  }));
-
-// Create card controller
-const createCard = asyncErrorHandler((req, res, next) => {
-  const { name, link } = req.body;
-  const { _id } = req.user;
-
-  return Card({ name, link, owner: _id })
-    .save()
-    .then((card) => res.status(StatusCodes.CREATED).send(card))
-    .catch((error) => {
-      if (error instanceof mongoose.Error.ValidationError) {
-        return next(
-          new CustomError('Переданы некорректные данные при создании карточки', StatusCodes.BAD_REQUEST),
-        );
-      }
-
-      return Promise.reject(error);
-    });
-});
-
-// Delete card controller
-const deleteCard = asyncErrorHandler((req, res, next) => {
-  const { cardId } = req.params;
-
-  return Card.findById(cardId)
-    .orFail()
-    .then((card) => {
-      if (!card.owner.equals(req.user._id)) {
-        throw new CustomError('Нельзя удалять карточки других пользователей', StatusCodes.FORBIDDEN);
-      }
-      return card.deleteOne(card).orFail().then(() => res.send({ message: 'Карточка удалена' }));
-    })
-    .catch((error) => {
-      if (error instanceof mongoose.Error.DocumentNotFoundError) {
-        return next(new CustomError('Карточка с указанным ID не найдена', StatusCodes.NOT_FOUND));
-      }
-
-      return Promise.reject(error);
-    });
-});
-
-// Toggle like card controller
-const toggleCardLike = (action, req, res, next) => {
-  const { _id } = req.user;
-  const { cardId } = req.params;
-
-  return Card.findByIdAndUpdate(cardId, { [action]: { likes: _id } }, { new: true })
-    .populate('likes')
-    .orFail()
-    .then((updatedCard) => res.send(updatedCard))
-    .catch((error) => {
-      if (error instanceof mongoose.Error.DocumentNotFoundError) {
-        return next(
-          new CustomError(`Передан несуществующий ID ${req.params.cardId} карточки`, StatusCodes.NOT_FOUND),
-        );
-      }
-
-      if (error instanceof mongoose.Error.CastError) {
-        return next(
-          new CustomError('Переданы некорректные данные для постановки/снятии лайка', StatusCodes.BAD_REQUEST),
-        );
-      }
-
-      return Promise.reject(error);
-    });
+export const getCards = async (req, res, next) => {
+  try {
+    const cards = await Card.find({});
+    return res.send(cards);
+  } catch (error) {
+    return next(ApiError());
+  }
 };
 
-// Add like card decorator
-const likeCard = asyncErrorHandler((req, res, next) => toggleCardLike('$addToSet', req, res, next));
+export const createCard = async (req, res, next) => {
+  try {
+    const { name, link } = req.body;
+    const newCard = await new Card({ name, link, owner: req.user._id });
+    return res.status(StatusCodes.CREATED).send(await newCard.save());
+  } catch (error) {
+    if (error instanceof mongoose.Error.ValidationError) {
+      return next(ApiError.BadRequest('Переданы неверные данные'));
+    }
+    return next(ApiError());
+  }
+};
 
-// Delete like card decorator
-const dislikeCard = asyncErrorHandler((req, res, next) => toggleCardLike('$pull', req, res, next));
+export const deleteCard = async (req, res, next) => {
+  try {
+    const card = await Card.findById(req.params.cardId).orFail();
+    if (card.owner.toString() !== req.user._id) {
+      return next(ApiError.Forbidden('Автор карточки - другой пользователь'));
+    }
+    return Card.deleteOne(card)
+      .orFail()
+      .then(() => {
+        res.send({ message: 'Карточка удалена' });
+      });
+  } catch (error) {
+    if (error instanceof mongoose.Error.CastError) {
+      return next(ApiError.BadRequest('Переданы неверные данные'));
+    }
+    if (error instanceof mongoose.Error.DocumentNotFoundError) {
+      return next(ApiError.NotFound('Карточка не найдена'));
+    }
+    return next(ApiError());
+  }
+};
 
-export {
-  createCard,
-  getCards,
-  deleteCard,
-  likeCard,
-  dislikeCard,
+export const likeCard = async (req, res, next) => {
+  try {
+    const card = await Card.findByIdAndUpdate(
+      req.params.cardId,
+      { $addToSet: { likes: req.user._id } },
+      { new: true },
+    ).orFail();
+    return res.send(card);
+  } catch (error) {
+    if (error instanceof mongoose.Error.CastError) {
+      return next(ApiError.BadRequest('Переданы неверные данные'));
+    }
+    if (error instanceof mongoose.Error.DocumentNotFoundError) {
+      return next(ApiError.NotFound('Карточка не найдена'));
+    }
+    return next(ApiError());
+  }
+};
+
+export const dislikeCard = async (req, res, next) => {
+  try {
+    const card = await Card.findByIdAndUpdate(
+      req.params.cardId,
+      { $pull: { likes: req.user._id } },
+      { new: true },
+    ).orFail();
+    return res.send(card);
+  } catch (error) {
+    if (error instanceof mongoose.Error.CastError) {
+      return next(ApiError.BadRequest('Переданы неверные данные'));
+    }
+    if (error instanceof mongoose.Error.DocumentNotFoundError) {
+      return next(ApiError.NotFound('Карточка не найдена'));
+    }
+    return next(ApiError());
+  }
 };

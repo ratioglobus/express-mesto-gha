@@ -1,147 +1,146 @@
-import mongoose from 'mongoose';
-import bcrypt from 'bcrypt';
 import { StatusCodes } from 'http-status-codes';
-
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 import User from '../models/user.js';
-
-import { ERROR_CODE_DUPLICATE_MONGO, SALT_ROUNDS } from '../utils/const.js';
 import generateToken from '../utils/jwt.js';
-import asyncErrorHandler from '../utils/asyncErrorHandler.js';
-import CustomError from '../utils/customError.js';
+import { ERROR_CODE_DUPLICATE_MONGO, SALT_ROUNDS } from '../utils/const.js';
+import ApiError from '../utils/ApiError.js';
 
-// Login controller
-const login = asyncErrorHandler((req, res, next) => {
+export const login = async (req, res, next) => {
   const { email, password } = req.body;
+  try {
+    const user = await User.findOne({ email })
+      .select('+password')
+      .orFail(() => {
+        throw new Error('NotAutanticate');
+      });
+    const matched = await bcrypt.compare(String(password), user.password);
+    if (!matched) {
+      throw new Error('NotAutanticate');
+    }
+    const token = generateToken({ _id: user._id });
+    return res.send({ token });
+  } catch (error) {
+    if (error.message === 'NotAutanticate') {
+      return next(ApiError.Unauthorized('Неправильные почта или пароль'));
+    }
 
-  return User.findOne({ email })
-    .select('+password')
-    .orFail()
-    .then(async (user) => {
-      const matched = await bcrypt.compare(String(password), user.password);
-      if (!matched) {
-        throw new CustomError('Не правильно введен почта/пароль', StatusCodes.UNAUTHORIZED);
-      }
+    return next(ApiError());
+  }
+};
 
-      const token = generateToken({ _id: user._id });
-      res.send({ token });
-    })
-    .catch((error) => {
-      if (error instanceof mongoose.Error.DocumentNotFoundError) {
-        return next(new CustomError('Не правильно введен почта/пароль', StatusCodes.UNAUTHORIZED));
-      }
+export const createUser = async (req, res, next) => {
+  try {
+    const newUser = await bcrypt
+      .hash(req.body.password, SALT_ROUNDS)
+      .then((hash) => User.create({ ...req.body, password: hash }));
 
-      return Promise.reject(error);
+    return res.status(StatusCodes.CREATED).send({
+      name: newUser.name,
+      about: newUser.about,
+      avatar: newUser.avatar,
+      _id: newUser._id,
+      email: newUser.email,
     });
-});
-
-// Get all users controller
-// eslint-disable-next-line no-unused-vars
-const getUsers = asyncErrorHandler((req, res, next) => User.find({}).then((users) => {
-  res.send(users);
-}));
-
-// Get user controller
-const getUser = (req, res, next, id) => User.findById(id)
-  .orFail()
-  .then((user) => res.send(user))
-  .catch((error) => {
-    if (error instanceof mongoose.Error.DocumentNotFoundError) {
-      return next(
-        new CustomError(`Пользователь по указанному ID ${req.params.id} не найден`, StatusCodes.NOT_FOUND),
-      );
-    }
-
-    if (error instanceof mongoose.Error.CastError) {
-      return next(new CustomError('Передан не валидный ID', StatusCodes.BAD_REQUEST));
-    }
-
-    return Promise.reject(error);
-  });
-
-// Get current user decorator
-const getCurrentUser = asyncErrorHandler((req, res, next) => getUser(req, res, next, req.user._id));
-
-// Get user by ID decorator
-const getUserById = asyncErrorHandler((req, res, next) => getUser(req, res, next, req.params.id));
-
-// Create user controller
-const createUser = asyncErrorHandler((req, res, next) => bcrypt
-  .hash(req.body.password, SALT_ROUNDS)
-  .then((hash) => User({ ...req.body, password: hash }).save())
-  .then((user) => res.status(StatusCodes.CREATED).send({
-    name: user.name,
-    about: user.about,
-    avatar: user.avatar,
-    _id: user._id,
-    email: user.email,
-  }))
-  .catch((error) => {
+  } catch (error) {
     if (error instanceof mongoose.Error.ValidationError) {
-      return next(
-        new CustomError('Переданы некорректные данные при создании пользователя', StatusCodes.BAD_REQUEST),
-      );
+      return next(ApiError.BadRequest('Переданы неверные данные'));
     }
 
     if (error.code === ERROR_CODE_DUPLICATE_MONGO) {
-      return next(
-        new CustomError(
-          'Пользователь с таким адресом электронной почты уже существует',
-          StatusCodes.CONFLICT,
-        ),
-      );
+      return next(ApiError.Conflict('Пользователь уже существует'));
     }
 
-    return Promise.reject(error);
-  }));
+    return next(ApiError());
+  }
+};
 
-// Update user controller
-const updateUser = (userData, userId, res, next) => User.findByIdAndUpdate(
-  userId,
-  { ...userData },
-  {
-    new: true,
-    runValidators: true,
-  },
-)
-  .orFail()
-  .then((updatedUserInfo) => res.send(updatedUserInfo))
-  .catch((error) => {
+export const getUsers = async (req, res, next) => {
+  try {
+    const users = await User.find({});
+    return res.send(users);
+  } catch (error) {
+    return next(ApiError());
+  }
+};
+
+export const getCurrentUser = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id).orFail();
+    return res.status(StatusCodes.OK).send(user);
+  } catch (error) {
+    if (error instanceof mongoose.Error.CastError) {
+      return next(ApiError.BadRequest('Переданы неверные данные'));
+    }
     if (error instanceof mongoose.Error.DocumentNotFoundError) {
-      return next(
-        new CustomError(`Пользователь по указанному ID ${userId} не найден`, StatusCodes.NOT_FOUND),
-      );
+      return next(ApiError.NotFound('Пользователь не найден'));
     }
 
+    return next(ApiError());
+  }
+};
+
+export const getUserById = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId).orFail();
+    return res.status(StatusCodes.OK).send(user);
+  } catch (error) {
+    if (error instanceof mongoose.Error.CastError) {
+      return next(ApiError.BadRequest('Переданы неверные данные'));
+    }
+    if (error instanceof mongoose.Error.DocumentNotFoundError) {
+      return next(ApiError.NotFound('Пользователь не найден'));
+    }
+
+    return next(ApiError());
+  }
+};
+
+export const updateInfoProfile = async (req, res, next) => {
+  try {
+    const { name, about } = req.body;
+    const updatedInfo = await User.findByIdAndUpdate(
+      req.user._id,
+      { name, about },
+      {
+        new: true,
+        runValidators: true,
+      },
+    ).orFail();
+    return res.json(updatedInfo);
+  } catch (error) {
+    if (error instanceof mongoose.Error.DocumentNotFoundError) {
+      return next(ApiError.NotFound('Пользователь не найден'));
+    }
     if (error instanceof mongoose.Error.ValidationError) {
-      return next(
-        new CustomError('Переданы некорректные данные при создании пользователя', StatusCodes.BAD_REQUEST),
-      );
+      return next(ApiError.BadRequest('Переданы неверные данные'));
     }
 
-    return Promise.reject(error);
-  });
+    return next(ApiError());
+  }
+};
 
-// Update user info decorator
-const updateUserInfo = asyncErrorHandler((req, res, next) => {
-  const { _id } = req.user;
-  const { name, about } = req.body;
-  return updateUser({ name, about }, _id, res, next);
-});
+export const updateAvatarProfile = async (req, res, next) => {
+  try {
+    const { avatar } = req.body;
+    const updatedInfo = await User.findByIdAndUpdate(
+      req.user._id,
+      { avatar },
+      {
+        new: true,
+        runValidators: true,
+      },
+    ).orFail();
+    return res.json(updatedInfo);
+  } catch (error) {
+    if (error instanceof mongoose.Error.DocumentNotFoundError) {
+      return next(ApiError.NotFound('Пользователь не найден'));
+    }
+    if (error instanceof mongoose.Error.ValidationError) {
+      return next(ApiError.BadRequest('Переданы неверные данные'));
+    }
 
-// Update user avatar decorator
-const updateUserAvatar = asyncErrorHandler((req, res, next) => {
-  const { _id } = req.user;
-  const { avatar } = req.body;
-  return updateUser({ avatar }, _id, res, next);
-});
-
-export {
-  login,
-  getUsers,
-  getCurrentUser,
-  getUserById,
-  createUser,
-  updateUser,
-  updateUserInfo,
-  updateUserAvatar,
+    return next(ApiError());
+  }
 };
