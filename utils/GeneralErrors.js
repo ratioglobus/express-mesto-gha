@@ -1,6 +1,6 @@
 import { StatusCodes } from 'http-status-codes';
 
-export default class ApiError extends Error {
+export default class GeneralErrors extends Error {
   constructor(status, message) {
     super();
     this.status = status;
@@ -8,22 +8,22 @@ export default class ApiError extends Error {
   }
 
   static BadRequest(message) {
-    return new ApiError(StatusCodes.BAD_REQUEST, message);
+    return new GeneralErrors(StatusCodes.BAD_REQUEST, message);
   }
 
   static Unauthorized(message) {
-    return new ApiError(StatusCodes.UNAUTHORIZED, message);
+    return new GeneralErrors(StatusCodes.UNAUTHORIZED, message);
   }
 
   static Forbidden(message) {
-    return new ApiError(StatusCodes.FORBIDDEN, message);
+    return new GeneralErrors(StatusCodes.FORBIDDEN, message);
   }
 
   static NotFound(message) {
-    return new ApiError(StatusCodes.NOT_FOUND, message);
+    return new GeneralErrors(StatusCodes.NOT_FOUND, message);
   }
 
   static Conflict(message) {
-    return new ApiError(StatusCodes.CONFLICT, message);
+    return new GeneralErrors(StatusCodes.CONFLICT, message);
   }
 }
