@@ -10,12 +10,12 @@ import userIDValidate from '../middlewares/userIDValidate.js';
 import userInfoValidate from '../middlewares/userInfoValidate.js';
 import userAvatarValidate from '../middlewares/userAvatarValidate.js';
 
-const usersRouter = new Router();
+const userRouter = new Router();
 
-usersRouter.get('/', getUsers);
-usersRouter.get('/me', getCurrentUser);
-usersRouter.get('/:id', userIDValidate, getUserById);
-usersRouter.patch('/me', userInfoValidate, updateUserInfo);
-usersRouter.patch('/me/avatar', userAvatarValidate, updateUserAvatar);
+userRouter.get('/', getUsers);
+userRouter.get('/me', getCurrentUser);
+userRouter.get('/:id', userIDValidate, getUserById);
+userRouter.patch('/me', userInfoValidate, updateUserInfo);
+userRouter.patch('/me/avatar', userAvatarValidate, updateUserAvatar);
 
-export default usersRouter;
+export default userRouter;
