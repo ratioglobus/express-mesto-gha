@@ -1,10 +1,8 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-import User from '../models/user.js';
-
 import { StatusCodes } from 'http-status-codes';
 import jwt from 'jsonwebtoken';
-
+import User from '../models/user.js';
 
 const { NODE_ENV, JWT_SECRET } = process.env;
 
