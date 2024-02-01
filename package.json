@@ -2,10 +2,10 @@
   "name": "express-mesto-gha",
   "version": "1.0.0",
   "description": "project practicum",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "dev": "nodemon --experimental-modules --es-module-specifier-resolution=node app.js",
+    "dev": "nodemon --experimental-modules --es-module-specifier-resolution=node --trace-warnings --inspect -- app.js",
     "lint": "npx eslint ."
   },
   "repository": {
