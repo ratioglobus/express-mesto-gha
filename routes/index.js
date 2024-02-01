@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import { errors } from 'celebrate';
-import { StatusCodes, ReasonPhrases } from 'http-status-codes';
 
 import userRouter from './users.js';
 import cardRouter from './cards.js';
@@ -18,11 +17,7 @@ router.use('/users', auth, userRouter);
 router.use('/cards', auth, cardRouter);
 
 router.use('*', auth, (req, res, next) => {
-  const err = new GeneralErrors(
-    `Error: ${StatusCodes.NOT_FOUND} ${req.originalUrl} ${ReasonPhrases.NOT_FOUND}`,
-    GeneralErrors.NotFound('Страница не найдена'),
-  );
-  next(err);
+  next(GeneralErrors.NotFound('Страница не найдена'));
 });
 
 router.use(errors());
