@@ -8,7 +8,7 @@ export const getCards = async (req, res, next) => {
     const cards = await Card.find({});
     return res.send(cards);
   } catch (error) {
-    return next(GeneralErrors());
+    return next(new GeneralErrors());
   }
 };
 
@@ -21,7 +21,7 @@ export const createCard = async (req, res, next) => {
     if (error instanceof mongoose.Error.ValidationError) {
       return next(GeneralErrors.BadRequest('При создании карточки переданы некорректные данные'));
     }
-    return next(GeneralErrors());
+    return next(new GeneralErrors());
   }
 };
 
@@ -40,7 +40,7 @@ export const likeCard = async (req, res, next) => {
     if (error instanceof mongoose.Error.DocumentNotFoundError) {
       return next(GeneralErrors.NotFound('Такая карточка не найдена'));
     }
-    return next(GeneralErrors());
+    return next(new GeneralErrors());
   }
 };
 
@@ -59,7 +59,7 @@ export const dislikeCard = async (req, res, next) => {
     if (error instanceof mongoose.Error.DocumentNotFoundError) {
       return next(GeneralErrors.NotFound('Такая карточка не найдена'));
     }
-    return next(GeneralErrors());
+    return next(new GeneralErrors());
   }
 };
 
@@ -81,6 +81,6 @@ export const deleteCard = async (req, res, next) => {
     if (error instanceof mongoose.Error.DocumentNotFoundError) {
       return next(GeneralErrors.NotFound('Такая карточка не найдена'));
     }
-    return next(GeneralErrors());
+    return next(new GeneralErrors());
   }
 };

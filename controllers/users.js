@@ -24,7 +24,7 @@ export const login = async (req, res, next) => {
       return next(GeneralErrors.Unauthorized('Неправильные почта или пароль'));
     }
 
-    return next(GeneralErrors());
+    return next(new GeneralErrors());
   }
 };
 
@@ -33,7 +33,7 @@ export const getUsers = async (req, res, next) => {
     const users = await User.find({});
     return res.send(users);
   } catch (error) {
-    return next(GeneralErrors());
+    return next(new GeneralErrors());
   }
 };
 
@@ -49,7 +49,7 @@ export const getCurrentUser = async (req, res, next) => {
       return next(GeneralErrors.NotFound('Такого пользователя не существует'));
     }
 
-    return next(GeneralErrors());
+    return next(new GeneralErrors());
   }
 };
 
@@ -66,7 +66,7 @@ export const getUserById = async (req, res, next) => {
       return next(GeneralErrors.NotFound('Такого пользователя не существует'));
     }
 
-    return next(GeneralErrors());
+    return next(new GeneralErrors());
   }
 };
 
@@ -92,7 +92,7 @@ export const createUser = async (req, res, next) => {
       return next(GeneralErrors.Conflict('Пользователь уже существует'));
     }
 
-    return next(GeneralErrors());
+    return next(new GeneralErrors());
   }
 };
 
@@ -112,7 +112,7 @@ export const updateAvatarProfile = async (req, res, next) => {
     if (error instanceof mongoose.Error.DocumentNotFoundError) {
       return next(GeneralErrors.NotFound('Такого пользователя не существует'));
     }
-    return next(GeneralErrors());
+    return next(new GeneralErrors());
   }
 };
 
@@ -133,6 +133,6 @@ export const updateInfoProfile = async (req, res, next) => {
       return next(GeneralErrors.NotFound('Такого пользователя не существует'));
     }
 
-    return next(GeneralErrors());
+    return next(new GeneralErrors());
   }
 };
